@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Обновление статуса задачи</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+<div class="container">
+    <h1>Обновление статуса задачи # {{ task[0] }}: "{{ task[1] }}"</h1>
+    <p>Текущий статус: {{ task[5] }}</p>
+    <form method="post" action="/update_status/{{ task[0] }}" class="form">
+        <div class="form-group">
+            <label for="new_status">Новый статус:</label>
+            <select name="new_status" class="form-control">
+                <option value="In Progress">Выполняется</option>
+                <option value="Completed">Завершено</option>
+                <option value="Cancelled">Отменено</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-success">Обновить статус</button>
+    </form>
+    <a href="/" class="btn btn-link">Вернуться к списку задач</a>
+</div>
+</body>
+</html>

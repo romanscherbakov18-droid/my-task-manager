@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Менеджер задач</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <!-- Подключаем Font Awesome для иконок -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+<div class="container">
+    <!-- Верхняя панель с логотипом и заголовком -->
+    <header class="page-header">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo">
+        <h1>Список задач</h1>
+    </header>
+
+    <!-- Всплывающие уведомления -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Панель фильтрации и сортировки -->
+    <form method="get" style="margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap;">
+        <label for="status-filter" style="white-space: nowrap;">Фильтр по статусу:</label>
+        <select name="status" id="status-filter" onchange="this.form.submit();" style="margin-bottom: 0;">
+            <option value="" {% if not selected_status %}selected{% endif %}>Все задачи</option>
+            <option value="In Progress" {% if selected_status == 'In Progress' %}selected{% endif %}>Выполняется</option>
+            <option value="Completed" {% if selected_status == 'Completed' %}selected{% endif %}>Завершено</option>
+            <option value="Cancelled" {% if selected_status == 'Cancelled' %}selected{% endif %}>Отменено</option>
+        </select>
+        <label for="sort-order" style="white-space: nowrap;">Сортировка по названию:</label>
+        <select name="sort" id="sort-order" onchange="this.form.submit();">
+            <option value="" {% if not sort_order %}selected{% endif %}>Без сортировки</option>
+            <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>По возрастанию (А-Я)</option>
+            <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>По убыванию (Я-А)</option>
+        </select>
+    </form>
+
+    <!-- Таблица со списком задач -->
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th>Описание</th>
+                <th>Исполнитель</th>
+                <th>Срок выполнения</th>
+                <th>Статус</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in tasks %}
+            <tr>
+                <td>{{ task[1] }}</td>
+                <td>{{ task[2] | default('', true) }}</td>
+                <td>{{ task[3] | default('', true) }}</td>
+                
+                <!-- НОВАЯ КОЛОНКА: Срок выполнения -->
+                <td>{{ task[5] | default('', true) }}</td>
+                
+                <td class="status-cell">
+                    {% if task[4] == 'Completed' %}
+                        <i class="fa-solid fa-check-circle" style="color:#28a745;"></i> Завершено
+                    {% elif task[4] == 'In Progress' %}
+                        <i class="fa-solid fa-hourglass-half" style="color:#ffc107;"></i> Выполняется
+                    {% elif task[4] == 'Cancelled' %}
+                        <i class="fa-solid fa-ban" style="color:#cc0000;"></i> Отменено
+                    {% else %}
+                        <i class="fa-solid fa-circle-question" style="color:#6c757d;"></i> Новый
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="/update_status/{{ task[0] }}">Изменить статус</a>  
+                    <a href="/edit_task/{{ task[0] }}">Редактировать</a>  
+                    
+                    <!-- Кнопка архивации только для завершенных задач -->
+                    {% if task[4] == 'Completed' %}
+                        <form method="post" action="/archive_task/{{ task[0] }}" style="display:inline;">
+                            <button type="submit" class="btn btn-warning btn-sm">Архивировать</button>
+                        </form>
+                    {% endif %}
+                    
+                    <form method="post" action="/delete_task/{{ task[0] }}" style="display:inline;">
+                        <button type="submit" onclick="return confirm('Вы уверены, что хотите удалить задачу?');" class="btn btn-danger btn-sm">Удалить</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align: center;">Задач не найдено.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Блок статистики -->
+    {% if total_tasks > 0 %}
+    <h2>Статистика выполнения задач:</h2>
+    <ul style="list-style: none; padding: 0;">
+        <li><strong>Всего задач:</strong> {{ total_tasks }}</li>
+        <li><strong>Завершено:</strong> {{ completed_tasks }}</li>
+        <li><strong>В процессе:</strong> {{ ongoing_tasks }}</li>
+    </ul>
+    
+    <!-- Круговая диаграмма -->
+    {{ pie_chart | safe }}
+    {% endif %}
+
+    <!-- Блок создания новой задачи -->
+    <h2>Создание новой задачи:</h2>
+    <form method="post" action="/add_task" class="form">
+        <div class="form-group">
+            <label for="title">Название задачи:</label>
+            <input type="text" name="title" required class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label for="description">Описание задачи:</label>
+            <textarea name="description" rows="3" class="form-control"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="assignee">Исполнитель:</label>
+            <input type="text" name="assignee" class="form-control">
+        </div>
+
+        <!-- НОВОЕ ПОЛЕ: Срок выполнения -->
+        <div class="form-group">
+            <label for="deadline">Срок выполнения:</label>
+            <input type="date" name="deadline" class="form-control">
+        </div>
+        
+        <div class="form-group">
+            <label for="repeat_type">Тип повторения:</label>
+            <select name="repeat_type" class="form-control">
+                <option value="">Нет повтора</option>
+                <option value="Daily">Ежедневно</option>
+                <option value="Weekly">Еженедельно</option>
+                <option value="Monthly">Ежемесячно</option>
+            </select>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Создать задачу</button>
+    </form>
+
+    <!-- Кнопка экспорта -->
+    <a href="/export" class="btn btn-info">Экспорт задач в TSV</a>
+
+</div>
+</body>
+</html>

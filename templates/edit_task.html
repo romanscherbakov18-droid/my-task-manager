@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Редактирование задачи</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+<div class="container">
+    <h1>Редактирование задачи #{{ task[0] }}: "{{ task[1] }}"</h1>
+    <form method="post" action="/edit_task/{{ task[0] }}" class="form">
+        <div class="form-group">
+            <label for="title">Название задачи:</label>
+            <input type="text" name="title" value="{{ task[1] }}" required class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="description">Описание задачи:</label>
+            <textarea name="description" rows="3" class="form-control">{{ task[2] }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="assignee">Исполнитель:</label>
+            <input type="text" name="assignee" value="{{ task[3] }}" class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="deadline">Срок выполнения (ДД.ММ.ГГГГ):</label>
+            <input type="date" name="deadline" value="{{ task[4] }}" class="form-control">
+        </div>
+        <button type="submit" class="btn btn-success">Сохранить изменения</button>
+    </form>
+    <a href="/" class="btn btn-link">Вернуться к списку задач</a>
+</div>
+</body>
+</html>
