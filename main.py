@@ -7,7 +7,7 @@ from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static')
 app.secret_key = 'ваш_секретный_ключ_здесь' # Замените на сложный ключ
 
 def create_db():
